@@ -72,7 +72,7 @@ boolean detectBasketball(boolean force=false) {
 
 void loop() {  
 
-  if (detectBasketball(true)) {
+  if (detectBasketball()) {
     playCoinSound();
     updateScore();
   }
