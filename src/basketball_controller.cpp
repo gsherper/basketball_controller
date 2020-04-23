@@ -3,55 +3,80 @@
 #include "pitches.h"  // must include open source pitches.h found online in libraries folder
 #include "TM1637.h"
 
-const int CLK = 6;
-const int DIO = 7;
-TM1637 tm1637(CLK, DIO);
+//scoreboard 
+const int clkScoreboardPin = 6;
+const int dataScoreboardPin = 7;
 int score = 0;
 
-int photoDiode=2;                      
-int GreenLed=13;                     
-int senRead=0;                  
-int SenseRate=1000;                   
- void setup()    
- {  
-  pinMode(photoDiode,OUTPUT);  
-  pinMode(GreenLed,OUTPUT);
-  pinMode(12,OUTPUT);
-  digitalWrite(photoDiode,HIGH);       
-  digitalWrite(GreenLed,LOW);
+TM1637 tm1637(clkScoreboardPin, dataScoreboardPin);
 
-      tm1637.init();
-    tm1637.set(BRIGHT_TYPICAL);//BRIGHT_TYPICAL = 2,BRIGHT_DARKEST = 0,BRIGHTEST = 7;      
+//speaker
+const int speakerPin = 9;
+
+//basket photo detector 
+int photoDiodePin = 2;                      
+int RedLedPin = 13;                     
+int senRead = 0;                  
+// int SenseRate = 1000;
+int SenseRate = 1005;
+
+void setup() {  
+
+  pinMode(photoDiodePin, OUTPUT);  
+  pinMode(RedLedPin, OUTPUT);
+
+  digitalWrite(photoDiodePin, HIGH);       
+  digitalWrite(RedLedPin, LOW);
+
+  tm1637.init();
+  //BRIGHT_TYPICAL = 2,BRIGHT_DARKEST = 0,BRIGHTEST = 7;
+  tm1637.set(BRIGHT_TYPICAL);  
+  
   Serial.begin(9600);           
- }  
- void loop()  
- {  
-  int val=analogRead(senRead);    
-//  Serial.println(val);            
-  if(val <= SenseRate)               
-  {
-   Serial.println("Detected");
-   digitalWrite(12,HIGH);  
-   digitalWrite(GreenLed,LOW);    
-      delay(20);  
 
-    // Play coin sound   
-  tone(9,NOTE_B5,100);
+}  
+
+void playCoinSound() {
+
+  // Play coin sound   
+  tone(speakerPin,NOTE_B5,100);
   delay(100);
-       digitalWrite(12,LOW);
-
-  tone(9,NOTE_E6,450);
-  score = score + 1;
-  tm1637.displayNum(score);
-
+  tone(speakerPin,NOTE_E6,450);
   delay(800);
   noTone(8);
- 
-  }  
-  else if(val > SenseRate)            
-  {  
-   digitalWrite(12,LOW);
-   digitalWrite(GreenLed,HIGH);       
-   delay(20);  
-  }  
- }  
+
+}
+
+void updateScore(boolean reset=false) {
+  if (reset) {
+    score = 0;
+  } else {
+    score = score + 1;
+  }
+  tm1637.displayNum(score);
+}
+
+boolean detectBasketball(boolean force=false) {
+
+  int val=analogRead(senRead);    
+  
+  Serial.println(val);   
+  if(val <= SenseRate || force) {
+    Serial.println("Detected");
+    digitalWrite(RedLedPin, HIGH);
+    return true;
+  } 
+  return false;
+  
+}
+
+void loop() {  
+
+  if (detectBasketball(true)) {
+    playCoinSound();
+    updateScore();
+  }
+
+  digitalWrite(RedLedPin, LOW);
+  delay(20);  
+}  
